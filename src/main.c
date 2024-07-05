@@ -39,7 +39,7 @@ int luvi_custom(lua_State* L);
 static int luvi_traceback(lua_State *L) {
   if (!lua_isstring(L, 1))  /* 'message' not a string? */
     return 1;  /* keep it intact */
-  lua_pushglobaltable(L);
+  luaL_findtable(L, LUA_REGISTRYINDEX, "_LOADED", 1);
   lua_getfield(L, -1, "debug");
   lua_remove(L, -2);
   if (!lua_istable(L, -1)) {
@@ -87,8 +87,8 @@ static lua_State* vm_acquire(){
   lua_pushcfunction(L, luaopen_miniz);
   lua_setfield(L, -2, "miniz");
 
-  lua_pushcfunction(L, luaopen_snapshot);
-  lua_setfield(L, -2, "snapshot");
+  //lua_pushcfunction(L, luaopen_snapshot);
+  //lua_setfield(L, -2, "snapshot");
 
 #ifdef WITH_LPEG
   lua_pushcfunction(L, luaopen_lpeg);

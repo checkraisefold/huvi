@@ -76,6 +76,7 @@ option(WithPackageBUNDLE "Build OSX bundle." OFF)
 
 find_package(Threads)
 
+include(LuaJITAddExecutable)
 if (WithSharedLibluv)
   # Building against a shared libluv provides that libluajit and libuv exists
   find_package(Libluv)
@@ -90,30 +91,17 @@ if (WithSharedLibluv)
   if (LIBUV_FOUND)
     include_directories(${LIBUV_INCLUDE_DIR})
   endif (LIBUV_FOUND)
-  include(LuaJITAddExecutable)
   set(LUVI_LIBRARIES ${LIBLUV_LIBRARIES} ${LUAJIT_LIBRARIES} ${LIBUV_LIBRARIES})
 else (WithSharedLibluv)
   # Build luv as static library instead of as module
   set(BUILD_MODULE OFF CACHE BOOL "Turn off building luv as module")
   set(BUILD_STATIC_LIBS ON CACHE BOOL "Build luv as static lib")
-  include_directories(deps/luv/src)
-  include_directories(deps/luv/deps/libuv/include)
-  if (WITH_LUA_ENGINE STREQUAL Lua)
-    include_directories(deps/luv/deps/lua)
-    set(LUVI_LIBRARIES libluv_a lualib uv_a)
-  else()
-    include_directories(deps/luv/deps/luajit/src)
-    set(LUVI_LIBRARIES libluv_a luajit-5.1 uv_a)
-  endif()
-  add_subdirectory(deps/luv)
+  include_directories(deps/huv/src)
+  include_directories(deps/huv/deps/libuv/include)
+	include_directories(deps/huv/deps/luajit/src)
+	set(LUVI_LIBRARIES libluv_a Luau.VM Luau.Compiler uv_a)
+  add_subdirectory(deps/huv)
 endif (WithSharedLibluv)
-
-set(LUA_COMPAT53_DIR deps/luv/deps/lua-compat-5.3)
-if(DEFINED ENV{LUA_COMPAT53_DIR})
-  set(LUA_COMPAT53_DIR $ENV{LUA_COMPAT53_DIR})
-endif()
-include_directories(${LUA_COMPAT53_DIR})
-include_directories(${LUA_COMPAT53_DIR}/c-api)
 
 if (WithOpenSSL)
   include(deps/openssl.cmake)
@@ -141,7 +129,7 @@ add_definitions( -DLUVI_VERSION="${LUVI_VERSION}" )
 if(WIN32)
   set(winsvc src/winsvc.h src/winsvcaux.h src/winsvc.c src/winsvcaux.c)
   if(WithSharedLibluv)
-    add_definitions( -DLUA_BUILD_AS_DLL -DBUILDING_UV_SHARED )
+    add_definitions( -DBUILDING_UV_SHARED )
   endif()
   add_definitions( -DWITH_WINSVC )
   add_definitions( -D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS )
@@ -153,17 +141,12 @@ if(UNIX)
   add_definitions(-Wall)
 endif()
 
-if (WITH_LUA_ENGINE STREQUAL Lua)
-  add_definitions(-DWITH_PLAIN_LUA)
-endif ()
-
 if(LPEGLIB_DIR)
   set(lpeg_re_lua ${LPEGLIB_DIR}/re.lua)
 endif()
 lua_add_executable(luvi
   ${winsvc}
   src/main.c
-  src/luvi_compat.c
   src/lua/init.lua
   src/lua/luvipath.lua
   src/lua/luvibundle.lua

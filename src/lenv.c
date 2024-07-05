@@ -228,7 +228,8 @@ static const luaL_Reg lenv_f[] = {
 };
 
 LUALIB_API int luaopen_env(lua_State *L) {
-  luaL_newlib(L, lenv_f);
+  lua_createtable(L, 0, sizeof(lenv_f) / sizeof((lenv_f)[0]) - 1);
+  luaL_setfuncs(L, lenv_f, 0);
 #if defined(_WIN32) && !defined(_XBOX_VER)
   lua_pushstring(L, "Windows");
 #elif defined(__linux__)

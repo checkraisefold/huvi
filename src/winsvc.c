@@ -100,7 +100,7 @@ static void svchandler_cb(uv_async_t* handle) {
   lua_pushlightuserdata(L, baton->block.lpEventData);
   lua_pushlightuserdata(L, baton->block.lpContext);
   if (lua_pcall(L, 4, 1, -6) == 0) {
-    baton->block.return_code = luaL_checkint(L, -1);
+    baton->block.return_code = luaL_checkinteger(L, -1);
   }
   else {
     baton->block.return_code = ERROR;
@@ -144,8 +144,8 @@ static svc_baton* svc_create_baton(lua_State* L, const char* name, int main_ref,
 }
 
 static void svc_destroy_baton(lua_State* L, svc_baton* baton) {
-  luaL_unref(L, LUA_REGISTRYINDEX, baton->block.lua_cb_ref);
-  luaL_unref(L, LUA_REGISTRYINDEX, baton->lua_main_ref);
+  lua_unref(L, baton->block.lua_cb_ref);
+  lua_unref(L, baton->lua_main_ref);
   free(baton->name);
   uv_close((uv_handle_t*)&baton->svc_async_handle, NULL);
   uv_close((uv_handle_t*)&baton->block.async_handle, NULL);
@@ -253,7 +253,7 @@ static int lua_SetServiceStatus(lua_State *L) {
 static int lua_ControlService(lua_State *L) {
   SERVICE_STATUS status;
   SC_HANDLE SvcCtrlHandler = lua_touserdata(L, 1);
-  DWORD dwControl = luaL_checkint(L, 2);
+  DWORD dwControl = luaL_checkinteger(L, 2);
 
   BOOL set = ControlService(SvcCtrlHandler, dwControl, (LPSERVICE_STATUS)&status);
   lua_pushboolean(L, set);
@@ -274,7 +274,7 @@ static int lua_StartService(lua_State *L) {
 
   if (lua_istable(L, 2)) {
     lua_pushnil(L);
-    numargs = lua_rawlen(L, 2);
+    numargs = lua_objlen(L, 2);
     if (numargs) {
       args = LocalAlloc(LPTR, sizeof(LPCSTR) * numargs);
     }
@@ -319,7 +319,7 @@ static void svcdispatcher_end_cb(uv_async_t* handle) {
     lua_pushinteger(L, info->error);
   }
   lua_call(L, 2, 0);
-  luaL_unref(L, LUA_REGISTRYINDEX, info->lua_cb_ref);
+  lua_unref(L, info->lua_cb_ref);
 
   LocalFree(info->svc_table);
   LocalFree(info);
@@ -420,7 +420,7 @@ static int lua_SpawnServiceCtrlDispatcher(lua_State *L) {
 static int lua_OpenSCManager(lua_State *L) {
   const char* machinename = lua_tostring(L, 1);
   const char* databasename = lua_tostring(L, 2);
-  DWORD access = luaL_checkint(L, 3);
+  DWORD access = luaL_checkinteger(L, 3);
   SC_HANDLE h = OpenSCManager(machinename, databasename, access);
   if (h != NULL) {
     lua_pushlightuserdata(L, h);
@@ -435,7 +435,7 @@ static int lua_OpenService(lua_State *L)
 {
   SC_HANDLE hSCManager = lua_touserdata(L, 1);
   const char* servicename = luaL_checkstring(L, 2);
-  DWORD access = luaL_checkint(L, 3);
+  DWORD access = luaL_checkinteger(L, 3);
   SC_HANDLE h = OpenService(hSCManager, servicename, access);
   if (h != NULL) {
     lua_pushlightuserdata(L, h);
@@ -450,10 +450,10 @@ static int lua_CreateService(lua_State *L) {
   SC_HANDLE hSCManager = lua_touserdata(L, 1);
   const char* servicename = luaL_checkstring(L, 2);
   const char* displayname = luaL_checkstring(L, 3);
-  DWORD access = luaL_checkint(L, 4);
-  DWORD servicetype = luaL_checkint(L, 5);
-  DWORD starttype = luaL_checkint(L, 6);
-  DWORD errorcontrol = luaL_checkint(L, 7);
+  DWORD access = luaL_checkinteger(L, 4);
+  DWORD servicetype = luaL_checkinteger(L, 5);
+  DWORD starttype = luaL_checkinteger(L, 6);
+  DWORD errorcontrol = luaL_checkinteger(L, 7);
   const char* pathname = luaL_checkstring(L, 8);
   const char* loadordergroup = lua_tostring(L, 9);
   DWORD tagid = 0;
@@ -497,7 +497,7 @@ static int lua_DeleteService(lua_State *L) {
 
 static int lua_ChangeServiceConfig2(lua_State *L) {
   SC_HANDLE h = lua_touserdata(L, 1);
-  DWORD dwInfoLevel = luaL_checkint(L, 2);
+  DWORD dwInfoLevel = luaL_checkinteger(L, 2);
   union {
     SERVICE_DESCRIPTION description;
     SERVICE_FAILURE_ACTIONS failure_actions;

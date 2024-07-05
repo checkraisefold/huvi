@@ -19,7 +19,6 @@
 
 #include "lua.h"
 #include "lualib.h"
-#include "lauxlib.h"
 #include "uv.h"
 #include "luv.h"
 
@@ -31,10 +30,6 @@
 #else
 #include <unistd.h>
 #include <errno.h>
-#endif
-
-#if (LUA_VERSION_NUM!=503)
-#include "compat-5.3.h"
 #endif
 
 #ifdef WITH_OPENSSL
@@ -56,5 +51,46 @@ int luaopen_lpeg(lua_State* L);
 #endif
 
 void luvi_openlibs(lua_State *L);
+
+/* Some Lua shims. */
+int luaL_ref(lua_State* L, int t)
+{
+    assert(t == LUA_REGISTRYINDEX);
+    int r = lua_ref(L, -1);
+    lua_pop(L, 1);
+    return r;
+}
+
+void luaL_setfuncs(lua_State* L, const luaL_Reg* reg, int nup)
+{
+    assert(nup == 0);
+    for (; reg->name != NULL; reg++) {
+        if (reg->func == NULL)
+            lua_pushboolean(L, 0);
+        else {
+            lua_pushcclosure(L, reg->func, NULL, 0);
+        }
+        lua_setfield(L, -2, reg->name);
+    }
+}
+
+inline int lua_rawgetp(lua_State* L, int idx, const void* p)
+{
+    idx = lua_absindex(L, idx);
+    luaL_checkstack(L, 1, "not enough stack slots");
+    lua_pushlightuserdata(L, (void*)p);
+    lua_rawget(L, idx);
+    return lua_type(L, -1);
+}
+
+inline void lua_rawsetp(lua_State* L, int idx, const void* p)
+{
+    idx = lua_absindex(L, idx);
+    luaL_checkstack(L, 1, "not enough stack slots");
+    lua_pushlightuserdata(L, (void*)p);
+    lua_insert(L, -2);
+    lua_rawset(L, idx);
+}
+
 #endif
 

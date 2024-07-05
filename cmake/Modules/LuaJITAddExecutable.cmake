@@ -10,7 +10,7 @@
 MACRO(LUAJIT_add_custom_commands luajit_target)
   SET(TARGET_ARCH $ENV{TARGET_ARCH})
   IF(TARGET_ARCH)
-    SET(LJ_BYTECODE_OPTS ${LJ_BYTECODE_OPTS} -a ${TARGET_ARCH})
+    SET(LJ_BYTECODE_OPTS ${LJ_BYTECODE_OPTS} --binary --target=${TARGET_ARCH})
   ENDIF(TARGET_ARCH)
   SET(LUA_PATH $ENV{LUA_PATH})
   SET(target_srcs "")
@@ -25,29 +25,12 @@ MACRO(LUAJIT_add_custom_commands luajit_target)
       string(SUBSTRING ${file} ${_begin} ${_stripped_file_length} stripped_file)
 
       set(generated_file "${CMAKE_BINARY_DIR}/jitted_tmp/${stripped_file}_${luajit_target}_generated${CMAKE_C_OUTPUT_EXTENSION}")
-
-      # Only use LUA_PATH if it's set
-      IF(LUA_PATH)
-        add_custom_command(
-          OUTPUT ${generated_file}
-          MAIN_DEPENDENCY ${source_file}
-          COMMAND "LUA_PATH=${LUA_PATH}" luajit
-          ARGS -b ${LJ_BYTECODE_OPTS}
-            ${source_file}
-            ${generated_file}
-          COMMENT "Building Luajitted ${source_file}: ${generated_file}"
-        )
-      ELSE()
-        add_custom_command(
-          OUTPUT ${generated_file}
-          MAIN_DEPENDENCY ${source_file}
-          COMMAND luajit
-          ARGS -b ${LJ_BYTECODE_OPTS}
-            ${source_file}
-            ${generated_file}
-          COMMENT "Building Luajitted ${source_file}: ${generated_file}"
-        )
-      ENDIF()
+			add_custom_command(
+				OUTPUT ${generated_file}
+				MAIN_DEPENDENCY ${source_file}
+				COMMAND C:/Users/Dev/Downloads/luau-windows/luau-compile ${LJ_BYTECODE_OPTS} ${source_file} > ${generated_file}
+				COMMENT "Building Luau'd ${source_file}: ${generated_file}"
+			)
 
       get_filename_component(basedir ${generated_file} PATH)
       file(MAKE_DIRECTORY ${basedir})

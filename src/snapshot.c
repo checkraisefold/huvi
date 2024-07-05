@@ -251,7 +251,7 @@ mark_function(lua_State *L, lua_State *dL, const void * parent, const char *desc
 		lua_pop(L,1);
 	} else {
 		lua_Debug ar;
-		lua_getinfo(L, ">S", &ar);
+		lua_getinfo(L, 0, ">S", &ar);
 		luaL_Buffer b;
 		luaL_buffinit(dL, &b);
 		luaL_addstring(&b, ar.short_src);
@@ -265,7 +265,7 @@ mark_function(lua_State *L, lua_State *dL, const void * parent, const char *desc
 
 static void
 mark_thread(lua_State *L, lua_State *dL, const void * parent, const char *desc) {
-	const void * t = readobject(L, dL, parent, desc);
+	/*const void* t = readobject(L, dL, parent, desc);
 	if (t == NULL)
 		return;
 	int level = 0;
@@ -278,7 +278,7 @@ mark_thread(lua_State *L, lua_State *dL, const void * parent, const char *desc) 
 	luaL_buffinit(dL, &b);
 	while (lua_getstack(cL, level, &ar)) {
 		char tmp[128];
-		lua_getinfo(cL, "Sl", &ar);
+		lua_getinfo(cL, 0, "Sl", &ar);
 		luaL_addstring(&b, ar.short_src);
 		if (ar.currentline >=0) {
 			char tmp[16];
@@ -301,7 +301,7 @@ mark_thread(lua_State *L, lua_State *dL, const void * parent, const char *desc) 
 	}
 	luaL_pushresult(&b);
 	lua_rawsetp(dL, SOURCE, t);
-	lua_pop(L,1);
+	lua_pop(L,1);*/
 }
 
 static void
@@ -418,7 +418,6 @@ snapshot(lua_State *L) {
 }
 
 LUALIB_API int luaopen_snapshot(lua_State *L) {
-	luaL_checkversion(L);
 	lua_pushcfunction(L, snapshot);
 	return 1;
 }

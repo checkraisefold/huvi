@@ -36,7 +36,7 @@ static int lua_GetModuleFileName(lua_State *L)
 
 static int lua_GetErrorString(lua_State *L)
 {
-  DWORD err = luaL_checkint(L, 1);
+  DWORD err = luaL_checkinteger(L, 1);
   LPTSTR lpMsgBuf = NULL;
 
   DWORD len = FormatMessage(

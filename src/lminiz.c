@@ -15,6 +15,7 @@
  *
  */
 
+#include "lminiz.h"
 #include "./luvi.h"
 #define MINIZ_NO_ZLIB_COMPATIBLE_NAMES
 #include "../deps/miniz.c"
@@ -51,7 +52,7 @@ static int lmz_reader_init(lua_State* L) {
   const char* path = luaL_checkstring(L, 1);
   mz_uint32 flags = luaL_optinteger(L, 2, 0);
   mz_uint64 size;
-  lmz_file_t* zip = lua_newuserdata(L, sizeof(*zip));
+  lmz_file_t* zip = lua_newuserdatadtor(L, sizeof(*zip), lmz_reader_gc);
   mz_zip_archive* archive = &(zip->archive);
   luaL_getmetatable(L, "miniz_reader");
   lua_setmetatable(L, -2);
@@ -71,18 +72,16 @@ static int lmz_reader_init(lua_State* L) {
   return 1;
 }
 
-static int lmz_reader_gc(lua_State *L) {
+static void lmz_reader_gc(lua_State *L) {
   lmz_file_t* zip = luaL_checkudata(L, 1, "miniz_reader");
   uv_fs_close(zip->loop, &(zip->req), zip->fd, NULL);
   uv_fs_req_cleanup(&(zip->req));
   mz_zip_reader_end(&(zip->archive));
-  return 0;
 }
 
-static int lmz_writer_gc(lua_State *L) {
+static void lmz_writer_gc(lua_State *L) {
   lmz_file_t* zip = luaL_checkudata(L, 1, "miniz_writer");
   mz_zip_writer_end(&(zip->archive));
-  return 0;
 }
 
 static int lmz_reader_get_num_files(lua_State *L) {
@@ -186,7 +185,7 @@ static int lmz_reader_get_offset(lua_State *L) {
 static int lmz_writer_init(lua_State *L) {
   size_t size_to_reserve_at_beginning = luaL_optinteger(L, 1, 0);
   size_t initial_allocation_size = luaL_optinteger(L, 2, 128 * 1024);
-  lmz_file_t* zip = lua_newuserdata(L, sizeof(*zip));
+  lmz_file_t* zip = lua_newuserdatadtor(L, sizeof(*zip), lmz_writer_gc);
   mz_zip_archive* archive = &(zip->archive);
   luaL_getmetatable(L, "miniz_writer");
   lua_setmetatable(L, -2);
@@ -232,7 +231,7 @@ static int lmz_writer_finalize(lua_State *L) {
 
 static int lmz_deflator_init(lua_State* L) {
   int level = lmz_check_compression_level(L, 1);
-  lmz_stream_t* stream = lua_newuserdata(L, sizeof(*stream));
+  lmz_stream_t* stream = lua_newuserdatadtor(L, sizeof(*stream), lmz_deflator_gc);
   mz_streamp miniz_stream = &(stream->stream);
   luaL_getmetatable(L, "miniz_deflator");
   lua_setmetatable(L, -2);
@@ -251,7 +250,7 @@ static int lmz_deflator_init(lua_State* L) {
 }
 
 static int lmz_inflator_init(lua_State* L) {
-  lmz_stream_t* stream = lua_newuserdata(L, sizeof(*stream));
+  lmz_stream_t* stream = lua_newuserdatadtor(L, sizeof(*stream), lmz_inflator_gc);
   mz_streamp miniz_stream = &(stream->stream);
   luaL_getmetatable(L, "miniz_inflator");
   lua_setmetatable(L, -2);
@@ -269,16 +268,14 @@ static int lmz_inflator_init(lua_State* L) {
   return 1;
 }
 
-static int lmz_deflator_gc(lua_State* L) {
+static void lmz_deflator_gc(lua_State* L) {
   lmz_stream_t* stream = luaL_checkudata(L, 1, "miniz_deflator");
   mz_deflateEnd(&(stream->stream));
-  return 0;
 }
 
-static int lmz_inflator_gc(lua_State* L) {
+static void lmz_inflator_gc(lua_State* L) {
   lmz_stream_t* stream = luaL_checkudata(L, 1, "miniz_inflator");
   mz_inflateEnd(&(stream->stream));
-  return 0;
 }
 
 static const char* flush_types[] = {
@@ -296,8 +293,8 @@ static int lmz_inflator_deflator_impl(lua_State* L, lmz_stream_t* stream) {
   luaL_Buffer buf;
   luaL_buffinit(L, &buf);
   do {
-    miniz_stream->avail_out = LUAL_BUFFERSIZE;
-    miniz_stream->next_out = (unsigned char*)luaL_prepbuffer(&buf);
+    miniz_stream->avail_out = LUA_BUFFERSIZE;
+    miniz_stream->next_out = (unsigned char*)luaL_prepbuffsize(&buf, LUA_BUFFERSIZE);
     int status;
     size_t before = miniz_stream->total_out;
     if (stream->mode) {
@@ -309,7 +306,8 @@ static int lmz_inflator_deflator_impl(lua_State* L, lmz_stream_t* stream) {
     switch (status) {
       case MZ_OK:
       case MZ_STREAM_END:
-        luaL_addsize(&buf, added);
+        //luaL_addsize(&buf, added);
+        (&buf)->p += added;
         break;
       case MZ_BUF_ERROR:
         break;
@@ -487,29 +485,26 @@ static const luaL_Reg lminiz_f[] = {
 
 LUALIB_API int luaopen_miniz(lua_State *L) {
   luaL_newmetatable(L, "miniz_reader");
-  luaL_newlib(L, lminiz_read_m);
+  lua_createtable(L, 0, sizeof(lminiz_read_m) / sizeof((lminiz_read_m)[0]) - 1);
+  luaL_setfuncs(L, lminiz_read_m, 0);
   lua_setfield(L, -2, "__index");
-  lua_pushcfunction(L, lmz_reader_gc);
-  lua_setfield(L, -2, "__gc");
   lua_pop(L, 1);
   luaL_newmetatable(L, "miniz_writer");
-  luaL_newlib(L, lminiz_write_m);
+  lua_createtable(L, 0, sizeof(lminiz_write_m) / sizeof((lminiz_write_m)[0]) - 1);
+  luaL_setfuncs(L, lminiz_write_m, 0);
   lua_setfield(L, -2, "__index");
-  lua_pushcfunction(L, lmz_writer_gc);
-  lua_setfield(L, -2, "__gc");
   lua_pop(L, 1);
   luaL_newmetatable(L, "miniz_deflator");
-  luaL_newlib(L, lminiz_deflate_m);
+  lua_createtable(L, 0, sizeof(lminiz_deflate_m) / sizeof((lminiz_deflate_m)[0]) - 1);
+  luaL_setfuncs(L, lminiz_deflate_m, 0);
   lua_setfield(L, -2, "__index");
-  lua_pushcfunction(L, lmz_deflator_gc);
-  lua_setfield(L, -2, "__gc");
   lua_pop(L, 1);
   luaL_newmetatable(L, "miniz_inflator");
-  luaL_newlib(L, lminiz_inflate_m);
+  lua_createtable(L, 0, sizeof(lminiz_inflate_m) / sizeof((lminiz_inflate_m)[0]) - 1);
+  luaL_setfuncs(L, lminiz_inflate_m, 0);
   lua_setfield(L, -2, "__index");
-  lua_pushcfunction(L, lmz_inflator_gc);
-  lua_setfield(L, -2, "__gc");
   lua_pop(L, 1);
-  luaL_newlib(L, lminiz_f);
+  lua_createtable(L, 0, sizeof(lminiz_f) / sizeof((lminiz_f)[0]) - 1);
+  luaL_setfuncs(L, lminiz_f, 0);
   return 1;
 }
