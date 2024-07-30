@@ -16,6 +16,9 @@
 */
 #define LUA_LIB
 #include "luvi.h"
+#if (LUA_VERSION_NUM < 503)
+#include "compat-5.3.h"
+#endif
 
 #include <windows.h>
 
@@ -73,6 +76,6 @@ static const luaL_Reg winsvcauxlib[] = {
 ** Open Windows Service Aux library
 */
 LUALIB_API int luaopen_winsvcaux(lua_State *L) {
-  luaL_register(L, "winsvcaux", winsvcauxlib);
+  luaL_newlib(L, winsvcauxlib);
   return 1;
 }

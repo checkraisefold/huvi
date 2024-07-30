@@ -20,6 +20,9 @@
 #include <windows.h>
 #include <winsvc.h>
 #include <strsafe.h>
+#if (LUA_VERSION_NUM < 503)
+#include "compat-5.3.h"
+#endif
 
 typedef struct {
   SERVICE_TABLE_ENTRY* svc_table;
@@ -534,7 +537,7 @@ static int lua_ChangeServiceConfig2(lua_State *L) {
     lua_pushstring(L, "lpsaActions");
     lua_gettable(L, -2);
     if (lua_type(L, -1) == LUA_TTABLE) {
-      info.failure_actions.cActions = lua_objlen(L, -1);
+      info.failure_actions.cActions = lua_rawlen(L, -1);
       if (info.failure_actions.cActions) {
         info.failure_actions.lpsaActions = LocalAlloc(LPTR, sizeof(SC_ACTION) * info.failure_actions.cActions);
       }
@@ -626,7 +629,7 @@ static const luaL_Reg winsvclib[] = {
 ** Open Windows service library
 */
 LUALIB_API int luaopen_winsvc(lua_State *L) {
-  luaL_register(L, "winsvc", winsvclib);
+  luaL_newlib(L, winsvclib);
 
   // Some Windows Defines
   SETINT(ERROR);

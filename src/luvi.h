@@ -35,8 +35,9 @@
 #ifdef WITH_OPENSSL
 #include "openssl.h"
 #endif
-#ifdef WITH_PCRE
-#include "pcre.h"
+#ifdef WITH_PCRE2
+#include "pcre2.h"
+int luaopen_rex_pcre2(lua_State* L);
 #endif
 #ifdef WITH_ZLIB
 #include "zlib.h"
@@ -49,8 +50,18 @@ LUALIB_API int luaopen_zlib(lua_State * const L);
 #ifdef WITH_LPEG
 int luaopen_lpeg(lua_State* L);
 #endif
+#ifdef WITH_PLAIN_LUA
+LUALIB_API int luaopen_bit(lua_State *L);
+#endif
+#ifdef WITH_LJ_VMDEF
+LUALIB_API int luaopen_vmdef(lua_State *L);
+#endif
 
 void luvi_openlibs(lua_State *L);
+
+LUALIB_API int luaopen_init(lua_State *L);
+LUALIB_API int luaopen_luvibundle(lua_State *L);
+LUALIB_API int luaopen_luvipath(lua_State *L);
 
 /* Some Lua shims. */
 int luaL_ref(lua_State* L, int t)
