@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 
-project(luvi C)
+project(luvi C CXX)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules")
 
@@ -65,30 +65,24 @@ if (WithSharedLibluv)
   find_package(Luv REQUIRED)
   include_directories(${LUV_INCLUDE_DIRS})
 
-  find_package(LuaJIT  REQUIRED)
-  include_directories(${LUAJIT_INCLUDE_DIRS})
+  find_package(Luau  REQUIRED)
+  include_directories(${LUAU_INCLUDE_DIRS})
 
   find_package(Libuv  REQUIRED)
   include_directories(${LIBUV_INCLUDE_DIRS})
 
   list(APPEND LUVI_LIBRARIES ${LUV_LIBRARIES} ${LUAJIT_LIBRARIES} ${LIBUV_LIBRARIES})
 else (WithSharedLibluv)
-  # Build luv as static library instead of as module
-  set(BUILD_MODULE OFF CACHE BOOL "Turn off building luv as module")
-  set(BUILD_STATIC_LIBS ON CACHE BOOL "Build luv as static lib")
-  include_directories(deps/luv/src)
-  include_directories(deps/luv/deps/libuv/include)
-  include_directories(deps/luv/deps/lua)
+  # Build huv as static library instead of as module
+  set(BUILD_MODULE OFF CACHE BOOL "Turn off building huv as module")
+  set(BUILD_STATIC_LIBS ON CACHE BOOL "Build huv as static lib")
+  include_directories(deps/huv/src)
+  include_directories(deps/huv/deps/libuv/include)
   list(APPEND LUVI_LIBRARIES Luau.VM Luau.Compiler)
+  list(APPEND LUVI_LIBRARIES libhuv_a uv_a)
 
-
-  list(APPEND LUVI_LIBRARIES libluv_a uv_a)
-  add_subdirectory(deps/luv) # Build luv
+  add_subdirectory(deps/huv) # Build huv
 endif (WithSharedLibluv)
-
-set(LUA_COMPAT53_DIR "${CMAKE_CURRENT_SOURCE_DIR}/deps/luv/deps/lua-compat-5.3" CACHE PATH "Path to lua-compat-5.3")
-include_directories(${LUA_COMPAT53_DIR})
-include_directories(${LUA_COMPAT53_DIR}/c-api)
 
 if (WithOpenSSL)
   include(deps/lua-openssl.cmake)
@@ -122,16 +116,15 @@ add_definitions(-DWITH_PLAIN_LUA)
 
 include(LuaAddExecutable)
 
-# TODO: define MINIZ_NO_STDIO for small size
 add_subdirectory(deps/miniz miniz.dir)
-set(lminiz src/lminiz.c)
 include_directories(deps/miniz)
 list(APPEND LUVI_LIBRARIES miniz)
 
 lua_add_executable(luvi
   ${winsvc}
-  ${lminiz}
+  src/lminiz.c
   src/main.c
+  src/luvi_loader.c
   src/lua/init.lua
   src/lua/luvipath.lua
   src/lua/luvibundle.lua

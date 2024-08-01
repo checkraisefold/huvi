@@ -418,6 +418,6 @@ snapshot(lua_State *L) {
 }
 
 LUALIB_API int luaopen_snapshot(lua_State *L) {
-	lua_pushcfunction(L, snapshot);
+	lua_pushcfunction(L, snapshot, NULL);
 	return 1;
 }

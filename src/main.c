@@ -15,7 +15,6 @@
  *
  */
 
-#define LUA_LIB
 #include "luvi.h"
 #include "luv.h"
 #include "lenv.c"
@@ -58,42 +57,34 @@ static lua_State* vm_acquire(){
   // Add in the lua standard and compat libraries
   luvi_openlibs(L);
 
-  // Get package.loaded so that we can load modules
-  lua_getglobal(L, "package");
-  lua_getfield(L, -1, "loaded");
+  // create an env table to push our std lib into
+  lua_createtable(L, 0, 7);
+  lua_pushvalue(L, -1);
+  lua_setglobal(L, "luvi");
 
   // load luv into uv in advance so that the metatables for async work.
-  luaL_requiref(L, "uv", luaopen_luv, 0);
-  lua_setfield(L, -2, "luv");
+  luaopen_luv(L);
+  lua_setglobal(L, "uv");
 
-#ifdef WITH_PLAIN_LUA
-  luaL_requiref(L, "bit", luaopen_bit, 1);
-  lua_pop(L, 1);
-#endif
-
-  // remove package.loaded
-  lua_remove(L, -1);
-
-  // Get package.preload so we can store builtins in it.
-  lua_getfield(L, -1, "preload");
-  lua_remove(L, -2); // Remove package
-
-  lua_pushcfunction(L, luaopen_env);
+  luaopen_env(L);
   lua_setfield(L, -2, "env");
 
-  lua_pushcfunction(L, luaopen_miniz);
-  lua_setfield(L, -2, "miniz");
+  luaopen_miniz(L);
+  lua_setglobal(L, "miniz");
 
-  //lua_pushcfunction(L, luaopen_snapshot);
+  lua_pushcfunction(L, lua_loadstring, NULL);
+  lua_setglobal(L, "loadstring");
+
+  //lua_pushcfunction(L, luaopen_snapshot, NULL);
   //lua_setfield(L, -2, "snapshot");
 
 #ifdef WITH_LPEG
-  lua_pushcfunction(L, luaopen_lpeg);
+  lua_pushcfunction(L, luaopen_lpeg, NULL);
   lua_setfield(L, -2, "lpeg");
 #endif
 
 #ifdef WITH_PCRE2
-  lua_pushcfunction(L, luaopen_rex_pcre2);
+  lua_pushcfunction(L, luaopen_rex_pcre2, NULL);
   lua_pushvalue(L, -1);
   lua_setfield(L, -3, "rex_pcre2");
   lua_setfield(L, -2, "rex");
@@ -101,37 +92,45 @@ static lua_State* vm_acquire(){
 
 #ifdef WITH_OPENSSL
   // Store openssl module definition at preload.openssl
-  lua_pushcfunction(L, luaopen_openssl);
+  lua_pushcfunction(L, luaopen_openssl, NULL);
   lua_setfield(L, -2, "openssl");
 #endif
 
 #ifdef WITH_ZLIB
   // Store zlib module definition at preload.zlib
-  lua_pushcfunction(L, luaopen_zlib);
+  lua_pushcfunction(L, luaopen_zlib, NULL);
   lua_setfield(L, -2, "zlib");
 #endif
 
 #ifdef WITH_WINSVC
   // Store luvi module definition at preload.winsvc
-  lua_pushcfunction(L, luaopen_winsvc);
+  lua_pushcfunction(L, luaopen_winsvc, NULL);
   lua_setfield(L, -2, "winsvc");
-  lua_pushcfunction(L, luaopen_winsvcaux);
+  lua_pushcfunction(L, luaopen_winsvcaux, NULL);
   lua_setfield(L, -2, "winsvcaux");
 #endif
 
-  // Store luvi module definition at preload.luvi
-  lua_pushcfunction(L, luaopen_luvi);
-  lua_setfield(L, -2, "luvi");
+  // Store luvi module definition at luvi.info
+  luaopen_luvi(L);
+  lua_setfield(L, -2, "info");
 
-  lua_pushcfunction(L, luaopen_init);
-  lua_setfield(L, -2, "init");
-  lua_pushcfunction(L, luaopen_luvibundle);
-  lua_setfield(L, -2, "luvibundle");
-  lua_pushcfunction(L, luaopen_luvipath);
+  luaopen_luvipath(L);
+  lua_getglobal(L, "luvi");
+  lua_insert(L, 1);
   lua_setfield(L, -2, "luvipath");
 
+  luaopen_luvibundle(L);
+  lua_getglobal(L, "luvi");
+  lua_insert(L, 1);
+  lua_setfield(L, -2, "luvibundle");
+
+  luaopen_init(L);
+  lua_getglobal(L, "luvi");
+  lua_insert(L, 1);
+  lua_setfield(L, -2, "init");
+
 #ifdef WITH_LJ_VMDEF
-  lua_pushcfunction(L, luaopen_vmdef);
+  lua_pushcfunction(L, luaopen_vmdef, NULL);
   lua_setfield(L, -2, "jit.vmdef");
 #endif
 
@@ -164,11 +163,14 @@ int main(int argc, char* argv[] ) {
   }
 
   /* push debug function */
-  lua_pushcfunction(L, luvi_traceback);
+  lua_pushcfunction(L, luvi_traceback, NULL);
   errfunc = lua_gettop(L);
 
   // Load the init.lua script
-  if (luaL_loadstring(L, "return require('init')(...)")) {
+  const char toLoad[] = "return luvi.init(...)";
+  size_t bytecodeLen = 0;
+  char* bytecode = luau_compile(toLoad, sizeof(toLoad) - 1, NULL, &bytecodeLen);
+  if (luau_load(L, "=luvi_init_vm", bytecode, bytecodeLen, 0)) {
     fprintf(stderr, "%s\n", lua_tostring(L, -1));
     vm_release(L);
     return -1;

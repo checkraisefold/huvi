@@ -14,15 +14,11 @@
 *  limitations under the License.
 *
 */
-#define LUA_LIB
 #include "luvi.h"
 
 #include <windows.h>
 #include <winsvc.h>
 #include <strsafe.h>
-#if (LUA_VERSION_NUM < 503)
-#include "compat-5.3.h"
-#endif
 
 typedef struct {
   SERVICE_TABLE_ENTRY* svc_table;
@@ -198,7 +194,8 @@ static int table_to_ServiceStatus(lua_State *L, SERVICE_STATUS *status) {
     return 0;
   }
   if (!lua_istable(L, -1)) {
-    return luaL_error(L, "table expected");
+    luaL_error(L, "table expected");
+    return 0;
   }
 
   status->dwCheckPoint = GetIntFromTable(L, "dwCheckPoint");
@@ -272,7 +269,8 @@ static int lua_StartService(lua_State *L) {
   size_t numargs = 0;
   LPCSTR *args = NULL;
   if (!(lua_isnil(L, 2) || lua_istable(L, 2))) {
-    return luaL_error(L, "table (array) or nil expected");
+    luaL_error(L, "table (array) or nil expected");
+    return 0;
   }
 
   if (lua_istable(L, 2)) {
@@ -344,7 +342,8 @@ static int lua_SpawnServiceCtrlDispatcher(lua_State *L) {
   luaL_checktype(L, 2, LUA_TFUNCTION);
   luaL_checktype(L, 3, LUA_TFUNCTION);
   if (gBatons) {
-    return luaL_error(L, "ServiceCtrlDispatcher is already running");
+    luaL_error(L, "ServiceCtrlDispatcher is already running");
+    return 0;
   }
 
   /* structure allocation/setup */
@@ -386,7 +385,8 @@ static int lua_SpawnServiceCtrlDispatcher(lua_State *L) {
   }
 
   if (len == 0) {
-    return luaL_error(L, "Service Dispatch Table is empty");
+    luaL_error(L, "Service Dispatch Table is empty");
+    return 0;
   }
 
   lua_pushvalue(L, 2);
@@ -537,7 +537,7 @@ static int lua_ChangeServiceConfig2(lua_State *L) {
     lua_pushstring(L, "lpsaActions");
     lua_gettable(L, -2);
     if (lua_type(L, -1) == LUA_TTABLE) {
-      info.failure_actions.cActions = lua_rawlen(L, -1);
+      info.failure_actions.cActions = lua_objlen(L, -1);
       if (info.failure_actions.cActions) {
         info.failure_actions.lpsaActions = LocalAlloc(LPTR, sizeof(SC_ACTION) * info.failure_actions.cActions);
       }
@@ -629,7 +629,8 @@ static const luaL_Reg winsvclib[] = {
 ** Open Windows service library
 */
 LUALIB_API int luaopen_winsvc(lua_State *L) {
-  luaL_newlib(L, winsvclib);
+  lua_createtable(L, 0, sizeof(winsvclib)/sizeof((winsvclib)[0]) - 1);
+  luaL_setfuncs(L, winsvclib, 0);
 
   // Some Windows Defines
   SETINT(ERROR);

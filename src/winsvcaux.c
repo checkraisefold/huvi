@@ -14,11 +14,7 @@
 *  limitations under the License.
 *
 */
-#define LUA_LIB
 #include "luvi.h"
-#if (LUA_VERSION_NUM < 503)
-#include "compat-5.3.h"
-#endif
 
 #include <windows.h>
 
@@ -76,6 +72,7 @@ static const luaL_Reg winsvcauxlib[] = {
 ** Open Windows Service Aux library
 */
 LUALIB_API int luaopen_winsvcaux(lua_State *L) {
-  luaL_newlib(L, winsvcauxlib);
+  lua_createtable(L, 0, sizeof(winsvcauxlib)/sizeof((winsvcauxlib)[0]) - 1);
+  luaL_setfuncs(L, winsvcauxlib, 0);
   return 1;
 }

@@ -1,3 +1,6 @@
 [submodule "deps/huv"]
 	path = deps/huv
 	url = https://github.com/checkraisefold/huv.git
+[submodule "deps/miniz"]
+	path = deps/miniz
+	url = https://github.com/richgel999/miniz.git

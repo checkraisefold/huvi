@@ -72,15 +72,13 @@ static int lmz_reader_init(lua_State* L) {
   return 1;
 }
 
-static void lmz_reader_gc(lua_State *L) {
-  lmz_file_t* zip = luaL_checkudata(L, 1, "miniz_reader");
+static void lmz_reader_gc(lmz_file_t* zip) {
   uv_fs_close(zip->loop, &(zip->req), zip->fd, NULL);
   uv_fs_req_cleanup(&(zip->req));
   mz_zip_reader_end(&(zip->archive));
 }
 
-static void lmz_writer_gc(lua_State *L) {
-  lmz_file_t* zip = luaL_checkudata(L, 1, "miniz_writer");
+static void lmz_writer_gc(lmz_file_t* zip) {
   mz_zip_writer_end(&(zip->archive));
 }
 
@@ -193,7 +191,8 @@ static int lmz_writer_init(lua_State *L) {
   memset(archive, 0, sizeof(*archive));
   zip->loop = luv_loop(L);
   if (!mz_zip_writer_init_heap(archive, size_to_reserve_at_beginning, initial_allocation_size)) {
-    return luaL_error(L, "Problem initializing heap writer");
+    luaL_error(L, "Problem initializing heap writer");
+    return 0;
   }
   return 1;
 }
@@ -203,7 +202,8 @@ static int lmz_writer_add_from_zip_reader(lua_State *L) {
   lmz_file_t* source = luaL_checkudata(L, 2, "miniz_reader");
   mz_uint file_index = (mz_uint)luaL_checkinteger(L, 3) - 1;
   if (!mz_zip_writer_add_from_zip_reader(&(zip->archive), &(source->archive), file_index)) {
-    return luaL_error(L, "Failure to copy file between zips");
+    luaL_error(L, "Failure to copy file between zips");
+    return 0;
   }
   return 0;
 }
@@ -215,7 +215,8 @@ static int lmz_writer_add_mem(lua_State *L) {
   const char* data = luaL_checklstring(L, 3, &size);
   mz_uint flags = luaL_optinteger(L, 4, 0);
   if (!mz_zip_writer_add_mem(&(zip->archive), path, data, size, flags)) {
-    return luaL_error(L, "Failure to add entry to zip");
+    luaL_error(L, "Failure to add entry to zip");
+    return 0;
   }
   return 0;
 }
@@ -269,13 +270,11 @@ static int lmz_inflator_init(lua_State* L) {
   return 1;
 }
 
-static void lmz_deflator_gc(lua_State* L) {
-  lmz_stream_t* stream = luaL_checkudata(L, 1, "miniz_deflator");
+static void lmz_deflator_gc(lmz_stream_t* stream) {
   mz_deflateEnd(&(stream->stream));
 }
 
-static void lmz_inflator_gc(lua_State* L) {
-  lmz_stream_t* stream = luaL_checkudata(L, 1, "miniz_inflator");
+static void lmz_inflator_gc(lmz_stream_t* stream) {
   mz_inflateEnd(&(stream->stream));
 }
 
