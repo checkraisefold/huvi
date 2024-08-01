@@ -23,7 +23,7 @@ macro(LUA_ADD_EXECUTABLE target)
 
     if (${source_extension} MATCHES "\.lua[u]?$")
       set(generated_file "${CMAKE_BINARY_DIR}/compiled_lua/${source_name}_${target}_generated.c")
-      set(generated_luac "${CMAKE_BINARY_DIR}/compiled_lua/${source_name}_${target}_generated.luac")
+      set(generated_luauc "${CMAKE_BINARY_DIR}/compiled_lua/${source_name}_${target}_generated.luauc")
       if (NOT IS_ABSOLUTE ${source_file})
         set(source_file "${CMAKE_CURRENT_SOURCE_DIR}/${source_file}")
       endif ()
@@ -31,8 +31,8 @@ macro(LUA_ADD_EXECUTABLE target)
       add_custom_command(
         OUTPUT ${generated_file}
         MAIN_DEPENDENCY ${source_file}
-        COMMAND ${LUA_COMMAND} ${LUA_COMMAND_ARGS} "${source_file}" > "${generated_luac}"
-        COMMAND ${CMAKE_COMMAND} -DINPUT_LUAU_FILE="${generated_luac}" -DOUTPUT_C_FILE="${generated_file}" -DREAL_LUA_FILE="${source_file}" -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/FileToLuauStub.cmake"
+        COMMAND ${LUA_COMMAND} ${LUA_COMMAND_ARGS} "${source_file}" > "${generated_luauc}"
+        COMMAND ${CMAKE_COMMAND} -DINPUT_LUAU_FILE="${generated_luauc}" -DOUTPUT_C_FILE="${generated_file}" -DREAL_LUA_FILE="${source_file}" -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/FileToLuauStub.cmake"
         COMMENT "Building Luau ${source_file}: ${generated_file}"
       )
 

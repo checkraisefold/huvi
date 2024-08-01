@@ -2,7 +2,7 @@
 # Modified by checkraisefold
 # https://stackoverflow.com/a/27206982 https://creativecommons.org/licenses/by-sa/3.0/
 
-# Creates a Luau loader stub from a given luac file
+# Creates a Luau loader stub from a given luauc file
 function(create_luau_stub file_name output lua_file)
     if (NOT IS_ABSOLUTE ${file_name})
         set(file_name "${CMAKE_CURRENT_SOURCE_DIR}/${file_name}")

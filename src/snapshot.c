@@ -23,11 +23,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "./luvi.h"
 
-#if (LUA_VERSION_NUM > 501)
-#define	lua_getfenv lua_getuservalue
-#define	lua_setfenv lua_setuservalue
-#endif
-
 #if defined(_MSC_VER) && _MSC_VER < 1900
 
 #define snprintf c99_snprintf
@@ -60,24 +55,6 @@ static int c99_snprintf(char *outBuf, size_t size, const char *format, ...)
 #endif
 
 static void mark_object(lua_State *L, lua_State *dL, const void * parent, const char * desc);
-
-#if LUA_VERSION_NUM == 501
-
-static void
-mark_function_env(lua_State *L, lua_State *dL, const void * t) {
-	lua_getfenv(L,-1);
-	if (lua_istable(L,-1)) {
-		mark_object(L, dL, t, "[environment]");
-	} else {
-		lua_pop(L,1);
-	}
-}
-
-#else
-
-#define mark_function_env(L,dL,t)
-
-#endif
 
 #include <stdbool.h>
 #include <stdio.h>
@@ -234,7 +211,6 @@ mark_function(lua_State *L, lua_State *dL, const void * parent, const char *desc
 	if (t == NULL)
 		return;
 
-	mark_function_env(L,dL,t);
 	int i;
 	for (i=1;;i++) {
 		const char *name = lua_getupvalue(L,-1,i);
@@ -265,7 +241,7 @@ mark_function(lua_State *L, lua_State *dL, const void * parent, const char *desc
 
 static void
 mark_thread(lua_State *L, lua_State *dL, const void * parent, const char *desc) {
-	/*const void* t = readobject(L, dL, parent, desc);
+	const void* t = readobject(L, dL, parent, desc);
 	if (t == NULL)
 		return;
 	int level = 0;
@@ -276,9 +252,8 @@ mark_thread(lua_State *L, lua_State *dL, const void * parent, const char *desc) 
 	lua_Debug ar;
 	luaL_Buffer b;
 	luaL_buffinit(dL, &b);
-	while (lua_getstack(cL, level, &ar)) {
+	while (lua_getinfo(cL, level, "sl", &ar)) {
 		char tmp[128];
-		lua_getinfo(cL, 0, "Sl", &ar);
 		luaL_addstring(&b, ar.short_src);
 		if (ar.currentline >=0) {
 			char tmp[16];
@@ -301,7 +276,7 @@ mark_thread(lua_State *L, lua_State *dL, const void * parent, const char *desc) 
 	}
 	luaL_pushresult(&b);
 	lua_rawsetp(dL, SOURCE, t);
-	lua_pop(L,1);*/
+	lua_pop(L,1);
 }
 
 static void
