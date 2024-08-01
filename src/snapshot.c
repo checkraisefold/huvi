@@ -264,7 +264,7 @@ mark_thread(lua_State *L, lua_State *dL, const void * parent, const char *desc) 
 		int i,j;
 		for (j=1;j>-1;j-=2) {
 			for (i=j;;i+=j) {
-				const char * name = lua_getlocal(cL, &ar, i);
+				const char * name = lua_getlocal(cL, level, i);
 				if (name == NULL)
 					break;
 				snprintf(tmp, sizeof(tmp), "%s : %s:%d",name,ar.short_src,ar.currentline);

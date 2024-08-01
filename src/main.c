@@ -49,7 +49,7 @@ static int luvi_traceback(lua_State *L) {
   return 1;
 }
 
-static lua_State* vm_acquire(){
+static lua_State* vm_acquire() {
   lua_State*L = luaL_newstate();
   if (L == NULL)
     return L;
@@ -140,11 +140,11 @@ static lua_State* vm_acquire(){
   return L;
 }
 
-static void vm_release(lua_State*L) {
+static void vm_release(lua_State* L) {
   lua_close(L);
 }
 
-int main(int argc, char* argv[] ) {
+int main(int argc, char* argv[]) {
 
   lua_State* L;
   int index;
