@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 
-project(luvi C CXX)
+project(huvi C CXX)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules")
 
@@ -23,26 +23,26 @@ if (UNIX)
 endif ()
 
 if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/VERSION")
-  file (STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/VERSION" LUVI_VERSION)
-  message("-- Found luvi version: ${LUVI_VERSION}")
+  file (STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/VERSION" HUVI_VERSION)
+  message("-- Found huvi version: ${HUVI_VERSION}")
 else ()
   execute_process(
     COMMAND git describe --tags
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    OUTPUT_VARIABLE LUVI_VERSION
+    OUTPUT_VARIABLE HUVI_VERSION
     OUTPUT_STRIP_TRAILING_WHITESPACE)
 
   # Handle shallow clones
-  if (LUVI_VERSION STREQUAL "")
+  if (HUVI_VERSION STREQUAL "")
     execute_process(
       COMMAND git rev-parse --short HEAD
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-      OUTPUT_VARIABLE LUVI_VERSION
+      OUTPUT_VARIABLE HUVI_VERSION
       OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-    set(LUVI_VERSION "v0.0.0-0-g${LUVI_VERSION}")
+    set(HUVI_VERSION "v0.0.0-0-g${HUVI_VERSION}")
   endif ()
-  message("-- Found luvi git version: ${LUVI_VERSION}")
+  message("-- Found huvi git version: ${HUVI_VERSION}")
 endif ()
 
 option(WithSharedLibluv "Shared or Static libluv" OFF)
@@ -57,10 +57,10 @@ option(WithZLIB "Include ZLIB" OFF)
 option(WithSharedZLIB "Shared or Static ZLIB" OFF)
 
 find_package(Threads)
-set (LUVI_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
+set (HUVI_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
 
 # When linking against a shared libluv, we assume that luajit and libuv are also shared
-# Luvi does not support linking a static libluv *and* a static lua/luajit or libuv
+# Huvi does not support linking a static libluv *and* a static lua/luajit or libuv
 if (WithSharedLibluv)
   find_package(Luv REQUIRED)
   include_directories(${LUV_INCLUDE_DIRS})
@@ -71,15 +71,15 @@ if (WithSharedLibluv)
   find_package(Libuv  REQUIRED)
   include_directories(${LIBUV_INCLUDE_DIRS})
 
-  list(APPEND LUVI_LIBRARIES ${LUV_LIBRARIES} ${LUAJIT_LIBRARIES} ${LIBUV_LIBRARIES})
+  list(APPEND HUVI_LIBRARIES ${LUV_LIBRARIES} ${LUAJIT_LIBRARIES} ${LIBUV_LIBRARIES})
 else (WithSharedLibluv)
   # Build huv as static library instead of as module
   set(BUILD_MODULE OFF CACHE BOOL "Turn off building huv as module")
   set(BUILD_STATIC_LIBS ON CACHE BOOL "Build huv as static lib")
   include_directories(deps/huv/src)
   include_directories(deps/huv/deps/libuv/include)
-  list(APPEND LUVI_LIBRARIES Luau.VM Luau.Compiler)
-  list(APPEND LUVI_LIBRARIES libhuv_a uv_a)
+  list(APPEND HUVI_LIBRARIES Luau.VM Luau.Compiler)
+  list(APPEND HUVI_LIBRARIES libhuv_a uv_a)
 
   add_subdirectory(deps/huv) # Build huv
 endif (WithSharedLibluv)
@@ -109,7 +109,7 @@ if (WIN32)
   add_definitions( -DWITH_WINSVC )
   add_definitions( -D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS )
 
-  add_library (luvi_renamed src/luvi_renamed.c)
+  add_library (huvi_renamed src/luvi_renamed.c)
 endif ()
 
 add_definitions(-DWITH_PLAIN_LUA)
@@ -118,9 +118,9 @@ include(LuaAddExecutable)
 
 add_subdirectory(deps/miniz miniz.dir)
 include_directories(deps/miniz)
-list(APPEND LUVI_LIBRARIES miniz)
+list(APPEND HUVI_LIBRARIES miniz)
 
-lua_add_executable(luvi
+lua_add_executable(huvi
   ${winsvc}
   src/lminiz.c
   src/main.c
@@ -137,22 +137,22 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
 endif ()
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-  set(list APPEND LUVI_LIBRARIES rt)
+  set(list APPEND HUVI_LIBRARIES rt)
 endif ()
 
-target_link_libraries(luvi ${LUVI_LIBRARIES} ${EXTRA_LIBS})
-set_target_properties(luvi PROPERTIES ENABLE_EXPORTS ON)
+target_link_libraries(huvi ${HUVI_LIBRARIES} ${EXTRA_LIBS})
+set_target_properties(huvi PROPERTIES ENABLE_EXPORTS ON)
 
-target_compile_definitions(luvi PRIVATE LUVI_VERSION="${LUVI_VERSION}")
-target_compile_definitions(luvi PRIVATE ${LUVI_DEFINITIONS}) # Add any extra definitions, like the WITH_{LIB} defines
+target_compile_definitions(huvi PRIVATE HUVI_VERSION="${HUVI_VERSION}")
+target_compile_definitions(huvi PRIVATE ${HUVI_DEFINITIONS}) # Add any extra definitions, like the WITH_{LIB} defines
 
 message("Configuration Summary:")
-message("  LUVI_VERSION: ${LUVI_VERSION}")
-message("  LUVI_DEFINITIONS: ${LUVI_DEFINITIONS}")
-message("  LUVI_LIBRARIES: ${LUVI_LIBRARIES}")
+message("  HUVI_VERSION: ${HUVI_VERSION}")
+message("  HUVI_DEFINITIONS: ${HUVI_DEFINITIONS}")
+message("  HUVI_LIBRARIES: ${HUVI_LIBRARIES}")
 
 ###############################################################################
 ## Installation Targets
 ###############################################################################
 
-install(TARGETS luvi DESTINATION bin)
+install(TARGETS huvi DESTINATION bin)

@@ -42,8 +42,7 @@ LUALIB_API int luaopen_${file_name_short_noext}(lua_State *L) {\n \
     \n \
     if (luau_load(L, \"${file_name_short}\", chunk, len, 0) != 0)\n \
         lua_error(L);\n \
-    lua_insert(L, 1);\n \
-    lua_call(L, lua_gettop(L)-1, LUA_MULTRET);\n \
+    lua_call(L, 0, 1);\n \
     return lua_gettop(L);\n \
 }\n \
     ")

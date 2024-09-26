@@ -72,13 +72,15 @@ static int lmz_reader_init(lua_State* L) {
   return 1;
 }
 
-static void lmz_reader_gc(lmz_file_t* zip) {
+static void lmz_reader_gc(void* zip_) {
+  lmz_file_t* zip = (lmz_file_t*)zip_;
   uv_fs_close(zip->loop, &(zip->req), zip->fd, NULL);
   uv_fs_req_cleanup(&(zip->req));
   mz_zip_reader_end(&(zip->archive));
 }
 
-static void lmz_writer_gc(lmz_file_t* zip) {
+static void lmz_writer_gc(void* zip_) {
+  lmz_file_t* zip = (lmz_file_t*)zip_;
   mz_zip_writer_end(&(zip->archive));
 }
 
@@ -270,11 +272,13 @@ static int lmz_inflator_init(lua_State* L) {
   return 1;
 }
 
-static void lmz_deflator_gc(lmz_stream_t* stream) {
+static void lmz_deflator_gc(void* stream_) {
+  lmz_stream_t* stream = (lmz_stream_t*)stream_;
   mz_deflateEnd(&(stream->stream));
 }
 
-static void lmz_inflator_gc(lmz_stream_t* stream) {
+static void lmz_inflator_gc(void* stream_) {
+  lmz_stream_t* stream = (lmz_stream_t*)stream_;
   mz_inflateEnd(&(stream->stream));
 }
 

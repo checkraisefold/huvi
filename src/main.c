@@ -60,7 +60,7 @@ static lua_State* vm_acquire() {
   // create an env table to push our std lib into
   lua_createtable(L, 0, 7);
   lua_pushvalue(L, -1);
-  lua_setglobal(L, "luvi");
+  lua_setglobal(L, "huvi");
 
   // load luv into uv in advance so that the metatables for async work.
   luaopen_luv(L);
@@ -115,18 +115,12 @@ static lua_State* vm_acquire() {
   lua_setfield(L, -2, "info");
 
   luaopen_luvipath(L);
-  lua_getglobal(L, "luvi");
-  lua_insert(L, 1);
-  lua_setfield(L, -2, "luvipath");
+  lua_setfield(L, -2, "path");
 
   luaopen_luvibundle(L);
-  lua_getglobal(L, "luvi");
-  lua_insert(L, 1);
-  lua_setfield(L, -2, "luvibundle");
+  lua_setfield(L, -2, "bundle");
 
   luaopen_init(L);
-  lua_getglobal(L, "luvi");
-  lua_insert(L, 1);
   lua_setfield(L, -2, "init");
 
 #ifdef WITH_LJ_VMDEF

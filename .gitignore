@@ -3,3 +3,4 @@ luvi-src.tar.gz
 luvi.exe
 VERSION
 .vs
+.cache
